@@ -1,6 +1,6 @@
 # LucidLink Ansible Deployment
 
-This Ansible playbook automates the deployment and configuration of LucidLink clients on multiple servers.
+This Ansible playbook automates the deployment and configuration of LucidLink clients on multiple Ubuntu servers.
 
 ## Setup Instructions
 
