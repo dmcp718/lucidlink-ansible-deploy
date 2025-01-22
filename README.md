@@ -4,16 +4,31 @@ This Ansible playbook automates the deployment and configuration of LucidLink cl
 
 ## Setup Instructions
 
-1. Copy `env.sample.yml` to `env.yml`:
+1. Run the setup script:
    ```bash
-   cp env.sample.yml env.yml
+   # First run will create env.yml from env.sample.yml
+   ./setup.sh
    ```
 
 2. Edit `env.yml` with your configuration:
-   - Configure mount points and cache locations
-   - Add your server IPs and hostnames
+   ```yaml
+   # LucidLink Configuration
+   ll_version: "2"              # "2" for lucid2, "3" for lucid3
+   ll_filespace: "your-filespace-name"
+   ll_username: "your-username"
+   ll_mount_point: "/mnt/lucidlink"
+   ll_cache_location: "/var/cache/lucidlink"
+   ll_data_cache_size: "50GB"
 
-3. Run the setup script to create and encrypt the vault:
+   # Server Configuration
+   servers:
+     - ip: "x.x.x.x"
+       hostname: "server1"
+     - ip: "x.x.x.x"
+       hostname: "server2"
+   ```
+
+3. Run the setup script again to configure everything:
    ```bash
    # Option 1: Interactive mode (will prompt for password)
    ./setup.sh
@@ -22,9 +37,12 @@ This Ansible playbook automates the deployment and configuration of LucidLink cl
    ./setup.sh "your-lucidlink-password"
    ```
 
-4. Update the `inventory` file with your server information using the template provided
+   This will:
+   - Create and encrypt the vault with your LucidLink password
+   - Generate inventory file from your server configuration
+   - Generate role defaults from your configuration
 
-5. Run the playbook:
+4. Run the playbook:
    ```bash
    ansible-playbook -i inventory site.yml --vault-password-file .vault_pass
    ```
@@ -39,7 +57,7 @@ This Ansible playbook automates the deployment and configuration of LucidLink cl
 ## Requirements
 
 - Ansible 2.9+
-- Target servers running Ubuntu 20.04 LTS or later
+- Target servers running Linux
 - SSH access to target servers
 - LucidLink account and credentials
 
