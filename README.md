@@ -39,10 +39,10 @@ This Ansible playbook automates the deployment and configuration of LucidLink cl
 ## Requirements
 
 - Ansible 2.9+
-- Target servers running Linux
+- Target servers running Ubuntu 20.04 LTS or later
 - SSH access to target servers
 - LucidLink account and credentials
 
 ## License
 
-This project is proprietary and confidential.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
