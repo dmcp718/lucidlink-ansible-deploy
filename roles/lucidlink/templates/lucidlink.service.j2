@@ -1,0 +1,16 @@
+[Unit]
+Description=LucidLink {{ ll_filespace }} Daemon
+After=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+EnvironmentFile=/root/.{{ ll_filespace | replace('.', '-') }}.pwd
+Environment=HOME=/home/ubuntu
+ExecStart=/usr/bin/bash -c "echo ${PASSWORD} | /usr/bin/lucid{{ ll_version }} --instance 501 daemon --fs {{ ll_filespace }} --user {{ ll_username }} --mount-point {{ ll_mount_point }} --root-path {{ ll_cache_location }} --config-path {{ ll_cache_location }} --fuse-allow-other"
+ExecStop=/usr/bin/bash -c "/usr/bin/lucid{{ ll_version }} --instance 501 exit"
+Restart=on-abort
+
+[Install]
+WantedBy=multi-user.target

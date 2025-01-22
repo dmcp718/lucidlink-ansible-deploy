@@ -1,0 +1,6 @@
+---
+- name: Deploy LucidLink
+  hosts: all
+  become: yes
+  roles:
+    - lucidlink
