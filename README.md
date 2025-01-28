@@ -16,8 +16,8 @@ This Ansible playbook automates the deployment and configuration of LucidLink cl
    ll_version: "2"              # "2" for lucid2, "3" for lucid3
    ll_filespace: "your-filespace-name"
    ll_username: "your-username"
-   ll_mount_point: "/mnt/lucidlink"
-   ll_cache_location: "/var/cache/lucidlink"
+   ll_mount_point: "mount/point"
+   ll_cache_location: "cache/location"
    ll_data_cache_size: "50GB"
 
    # Server Configuration
