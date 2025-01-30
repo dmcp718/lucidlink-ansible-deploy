@@ -45,7 +45,7 @@
   
 - name: Set up logging directory
   file:
-    path: /var/log/lucidlink
+    path: /var/log/lucidlink-ansible-deploy
     state: directory
     mode: '0755'
     

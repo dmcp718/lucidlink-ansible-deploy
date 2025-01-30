@@ -93,7 +93,7 @@ The deployment includes comprehensive monitoring:
 - Automated alerts
 - Logging configuration
 
-Logs are stored in `/var/log/lucidlink/`
+Logs are stored in `/var/log/lucidlink-ansible-deploy/`
 
 ## Error Handling
 
@@ -109,7 +109,7 @@ The deployment includes:
 
 1. Check logs:
    ```bash
-   tail -f /var/log/lucidlink/lucidlink.log
+   tail -f /var/log/lucidlink-ansible-deploy/deploy.log
    ```
 
 2. Verify service status:
