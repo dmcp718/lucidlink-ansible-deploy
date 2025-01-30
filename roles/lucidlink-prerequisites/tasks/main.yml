@@ -19,9 +19,17 @@
         fail_msg: "System does not meet minimum requirements: 4GB RAM and 10GB free space"
         success_msg: "System meets minimum requirements"
 
+- name: Debug OS info
+  debug:
+    msg: "Distribution: {{ ansible_distribution }}, Version: {{ ansible_distribution_version }}, Major: {{ ansible_distribution_major_version }}"
+
 - name: Set OS-specific variables
   set_fact:
     os_type: "{% if ansible_distribution == 'Ubuntu' %}ubuntu{% elif ansible_distribution == 'Amazon' %}amazon_linux_2023{% else %}unknown{% endif %}"
+
+- name: Debug OS type
+  debug:
+    msg: "Detected OS type: {{ os_type }}"
 
 - name: Set package lists
   set_fact:
@@ -40,6 +48,10 @@
         - python3-pip
         - python3-devel
         - gcc
+
+- name: Debug package list
+  debug:
+    msg: "Package list for {{ os_type }}: {{ os_packages[os_type] }}"
       
 - name: Install required packages
   package:
