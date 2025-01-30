@@ -1,6 +1,30 @@
 ---
 - name: Deploy LucidLink
   hosts: all
-  become: yes
+  become: true
+  
+  pre_tasks:
+    - name: Validate environment configuration
+      local_action:
+        module: command
+        cmd: "./scripts/validate_env.py env.yml"
+      run_once: true
+      tags: ['always']
+  
   roles:
-    - lucidlink
+    - { role: lucidlink-prerequisites, tags: ['prereq', 'setup'] }
+    - { role: lucidlink-install, tags: ['install', 'setup'] }
+    - { role: lucidlink-config, tags: ['config'] }
+    - { role: lucidlink-mount, tags: ['mount'] }
+  
+  post_tasks:
+    - name: Verify LucidLink service status
+      service_facts:
+      register: service_state
+      tags: ['health-check']
+    
+    - name: Check mount point
+      command: mountpoint {{ ll_mount_point }}
+      register: mount_check
+      changed_when: false
+      tags: ['health-check']

@@ -1,0 +1,50 @@
+---
+- name: Configure LucidLink
+  block:
+    - name: Check if already configured
+      command: lucid status
+      register: lucid_status
+      changed_when: false
+      failed_when: false
+      
+    - name: Configure LucidLink credentials
+      command: >
+        lucid configure
+        --username {{ ll_username }}
+        --password {{ ll_password }}
+        --filespace {{ ll_filespace }}
+        --non-interactive
+      no_log: true
+      when: lucid_status.rc != 0
+      register: config_result
+      
+    - name: Configure cache settings
+      command: >
+        lucid config set
+        --cache-location {{ ll_cache_location }}
+        --data-cache-size {{ ll_data_cache_size }}
+      when: config_result is changed
+      
+    - name: Enable auto-updates
+      command: lucid config set --auto-update true
+      changed_when: false
+      
+    - name: Configure logging
+      template:
+        src: logging.conf.j2
+        dest: /etc/lucidlink/logging.conf
+        mode: '0644'
+      notify: restart_lucidlink
+      
+  rescue:
+    - name: Log configuration failure
+      ansible.builtin.debug:
+        msg: "Failed to configure LucidLink"
+        
+    - name: Backup configuration
+      command: lucid config backup --output /tmp/lucid-config-backup-{{ ansible_date_time.iso8601 }}
+      when: lucid_status.rc == 0
+      
+    - name: Fail the play
+      fail:
+        msg: "Configuration failed. A backup has been created if possible."

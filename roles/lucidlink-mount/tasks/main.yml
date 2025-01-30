@@ -1,0 +1,67 @@
+---
+- name: Manage LucidLink mount
+  block:
+    - name: Check if already mounted
+      command: mountpoint {{ ll_mount_point }}
+      register: mount_status
+      changed_when: false
+      failed_when: false
+      
+    - name: Start LucidLink service
+      systemd:
+        name: lucidlink
+        state: started
+        enabled: yes
+      register: service_start
+      
+    - name: Wait for service to be ready
+      wait_for:
+        timeout: 30
+      when: service_start is changed
+      
+    - name: Mount LucidLink filesystem
+      command: lucid mount {{ ll_mount_point }}
+      when: mount_status.rc != 0
+      register: mount_result
+      retries: 3
+      delay: 10
+      until: mount_result is success
+      
+    - name: Verify mount
+      command: mountpoint {{ ll_mount_point }}
+      register: mount_verify
+      changed_when: false
+      
+    - name: Check filesystem access
+      file:
+        path: "{{ ll_mount_point }}/test_write"
+        state: touch
+      register: fs_test
+      ignore_errors: yes
+      
+  rescue:
+    - name: Handle mount failure
+      block:
+        - name: Attempt unmount
+          command: lucid unmount {{ ll_mount_point }}
+          when: mount_status.rc == 0
+          ignore_errors: yes
+          
+        - name: Restart service
+          systemd:
+            name: lucidlink
+            state: restarted
+          ignore_errors: yes
+          
+        - name: Second mount attempt
+          command: lucid mount {{ ll_mount_point }}
+          register: second_mount
+          
+      rescue:
+        - name: Log mount failure
+          ansible.builtin.debug:
+            msg: "Failed to mount LucidLink filesystem after recovery attempts"
+            
+        - name: Fail the play
+          fail:
+            msg: "Mount failed. Please check logs and network connectivity."

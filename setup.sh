@@ -3,13 +3,25 @@
 # Exit on error
 set -e
 
-# Check if env.yml exists, if not copy from sample
-if [ ! -f env.yml ]; then
-    echo "Creating env.yml from sample..."
-    cp env.sample.yml env.yml
-    echo "Please edit env.yml with your configuration values and run this script again."
-    exit 0
+# Source environment variables if exists
+if [ -f .env ]; then
+    source .env
 fi
+
+# Function to check dependencies
+check_dependencies() {
+    local missing_deps=()
+    for dep in ansible python3 openssl; do
+        if ! command -v $dep &> /dev/null; then
+            missing_deps+=($dep)
+        fi
+    done
+    
+    if [ ${#missing_deps[@]} -ne 0 ]; then
+        echo "Missing required dependencies: ${missing_deps[*]}"
+        exit 1
+    fi
+}
 
 # Function to prompt for password if not provided
 get_password() {
@@ -22,14 +34,33 @@ get_password() {
     fi
 }
 
+# Check dependencies
+check_dependencies
+
+# Check if env.yml exists, if not copy from sample
+if [ ! -f env.yml ]; then
+    echo "Creating env.yml from sample..."
+    cp env.sample.yml env.yml
+    echo "Please edit env.yml with your configuration values and run this script again."
+    exit 0
+fi
+
+# Validate environment configuration
+if ! ./scripts/validate_env.py env.yml; then
+    echo "Environment validation failed. Please fix the issues and try again."
+    exit 1
+fi
+
 # Get password from argument or prompt
 ll_password=$(get_password "$1")
 
-# Create vault password
-openssl rand -base64 32 > .vault_pass
-chmod 600 .vault_pass
+# Create secure vault password
+if [ ! -f .vault_pass ]; then
+    openssl rand -base64 48 > .vault_pass
+    chmod 600 .vault_pass
+fi
 
-# Create group_vars structure
+# Ensure group_vars structure exists
 mkdir -p group_vars/lucidlink
 
 # Create temporary vault content
@@ -49,44 +80,35 @@ get_env_value() {
     echo "${value:-$default}"
 }
 
-# Generate defaults/main.yml from env.yml
-mkdir -p roles/lucidlink/defaults
-cat > roles/lucidlink/defaults/main.yml << EOL
----
-# LucidLink Configuration
+# Generate inventory if it doesn't exist
+if [ ! -f inventory ]; then
+    echo "Generating inventory file..."
+    echo "[lucidlink]" > inventory
+    
+    while IFS= read -r line; do
+        if [[ $line =~ ^[[:space:]]*-[[:space:]]*ip:[[:space:]]*(.+)$ ]]; then
+            ip="${BASH_REMATCH[1]}"
+            echo "$ip" >> inventory
+        fi
+    done < env.yml
+fi
 
-# Version of LucidLink to use
-# Options:
-#   "2" - Uses /usr/bin/lucid2
-#   "3" - Uses /usr/bin/lucid3
-ll_version: "$(get_env_value ll_version 2)"
+# Create ansible.cfg if it doesn't exist
+if [ ! -f ansible.cfg ]; then
+    cat > ansible.cfg << EOL
+[defaults]
+inventory = inventory
+vault_password_file = .vault_pass
+host_key_checking = False
+retry_files_enabled = False
+log_path = ansible.log
 
-ll_filespace: "$(get_env_value ll_filespace "your-filespace-name")"
-ll_username: "$(get_env_value ll_username "your-username")"
-ll_mount_point: "$(get_env_value ll_mount_point "/mnt/lucidlink")"
-ll_cache_location: "$(get_env_value ll_cache_location "/var/cache/lucidlink")"
-ll_data_cache_size: "$(get_env_value ll_data_cache_size "50GB")"
+[ssh_connection]
+pipelining = True
 EOL
+fi
 
-# Generate inventory from env.yml
-echo "[lucidlink]" > inventory
-# Use awk to parse the servers section of env.yml
-awk '/^servers:/,/^[^-]/ {
-    if ($1 == "-") {
-        ip = ""; hostname = ""
-    }
-    if ($1 == "ip:") ip = $2
-    if ($1 == "hostname:") hostname = $2
-    if (ip != "" && hostname != "") {
-        gsub(/"/, "", ip)
-        gsub(/"/, "", hostname)
-        print hostname " ansible_host=" ip
-        ip = ""; hostname = ""
-    }
-}' env.yml >> inventory
+# Set up logging directory
+mkdir -p logs
 
-echo "Setup complete! The following files have been created/updated:"
-echo "- .vault_pass (encrypted vault password)"
-echo "- group_vars/lucidlink/vault.yml (encrypted)"
-echo "- roles/lucidlink/defaults/main.yml (generated from env.yml)"
-echo "- inventory (generated from env.yml)"
+echo "Setup complete! You can now run: ansible-playbook site.yml"

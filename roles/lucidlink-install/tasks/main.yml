@@ -1,0 +1,60 @@
+---
+- name: Check if LucidLink is already installed
+  stat:
+    path: /usr/local/bin/lucid
+  register: lucid_binary
+  
+- name: Download LucidLink client
+  block:
+    - name: Get latest LucidLink version
+      uri:
+        url: https://api.lucidlink.com/v1/releases/latest
+        return_content: yes
+      register: latest_version
+      when: not lucid_binary.stat.exists
+      
+    - name: Download LucidLink package
+      get_url:
+        url: "https://download.lucidlink.com/download/{{ latest_version.json.version }}/lucid-{{ latest_version.json.version }}-linux-x64.tar.gz"
+        dest: /tmp/lucid.tar.gz
+        mode: '0644'
+      when: not lucid_binary.stat.exists
+      register: download_result
+      retries: 3
+      delay: 5
+      until: download_result is success
+  rescue:
+    - name: Log installation failure
+      ansible.builtin.debug:
+        msg: "Failed to download LucidLink client"
+      
+    - name: Fail the play
+      fail:
+        msg: "Installation failed. Please check network connectivity and try again."
+      
+- name: Install LucidLink
+  block:
+    - name: Extract LucidLink package
+      unarchive:
+        src: /tmp/lucid.tar.gz
+        dest: /usr/local/bin
+        remote_src: yes
+      when: not lucid_binary.stat.exists
+      
+    - name: Set permissions
+      file:
+        path: /usr/local/bin/lucid
+        mode: '0755'
+      when: not lucid_binary.stat.exists
+      
+    - name: Create systemd service
+      template:
+        src: lucidlink.service.j2
+        dest: /etc/systemd/system/lucidlink.service
+        mode: '0644'
+      notify: reload_systemd
+  always:
+    - name: Cleanup temporary files
+      file:
+        path: /tmp/lucid.tar.gz
+        state: absent
