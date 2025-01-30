@@ -7,7 +7,7 @@
     - name: Validate environment configuration
       local_action:
         module: command
-        cmd: "./scripts/validate_env.py env.yml"
+        cmd: "./scripts/validate_env.sh env.yml"
       run_once: true
       tags: ['always']
   

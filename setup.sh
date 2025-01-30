@@ -11,7 +11,7 @@ fi
 # Function to check dependencies
 check_dependencies() {
     local missing_deps=()
-    for dep in ansible python3 openssl; do
+    for dep in ansible openssl; do
         if ! command -v $dep &> /dev/null; then
             missing_deps+=($dep)
         fi
@@ -46,8 +46,7 @@ if [ ! -f env.yml ]; then
 fi
 
 # Validate environment configuration
-if ! ./scripts/validate_env.py env.yml; then
-    echo "Environment validation failed. Please fix the issues and try again."
+if ! ./scripts/validate_env.sh env.yml; then
     exit 1
 fi
 
