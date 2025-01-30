@@ -85,14 +85,19 @@ if [ ! -f inventory ]; then
     echo "[lucidlink]" > inventory
     
     while IFS= read -r line; do
+        echo "Processing line: $line"  
         if [[ $line =~ ^[[:space:]]*-[[:space:]]*ip:[[:space:]]*(.+)$ ]]; then
             ip="${BASH_REMATCH[1]}"
+            echo "Found IP: $ip"  
             # Remove quotes and comments
             ip=$(echo "$ip" | sed 's/#.*$//' | sed 's/"//g' | sed "s/'//g" | tr -d '[:space:]')
+            echo "Cleaned IP: $ip"  
             # Skip placeholder IPs
             if [[ "$ip" == "x.x.x.x" ]]; then
+                echo "Skipping placeholder IP"  
                 continue
             fi
+            echo "Adding IP to inventory: $ip"  
             echo "$ip" >> inventory
         fi
     done < env.yml
