@@ -21,10 +21,7 @@
 
 - name: Set OS-specific variables
   set_fact:
-    os_type: >-
-      {% if ansible_distribution == 'Ubuntu' %}ubuntu
-      {% elif ansible_distribution == 'Amazon' %}amazon_linux_2023
-      {% else %}unknown{% endif %}
+    os_type: "{% if ansible_distribution == 'Ubuntu' %}ubuntu{% elif ansible_distribution == 'Amazon' %}amazon_linux_2023{% else %}unknown{% endif %}"
 
 - name: Set package lists
   set_fact:
