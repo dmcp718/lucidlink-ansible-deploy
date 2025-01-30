@@ -40,8 +40,8 @@ validate_path() {
 validate_cache_size() {
     local value
     value=$(grep "^ll_data_cache_size:" "$ENV_FILE" | sed "s/^ll_data_cache_size:[[:space:]]*//")
-    value="${value//\"/}"  # Remove quotes
-    value="${value//[[:space:]]/}"  # Remove whitespace
+    # Remove quotes and comments
+    value=$(echo "$value" | sed 's/#.*$//' | sed 's/"//g' | sed "s/'//g" | tr -d '[:space:]')
     if [[ ! "$value" =~ ^[0-9]+[MGT]B$ ]]; then
         echo "Error: ll_data_cache_size must be in format: <number>[M|G|T]B (e.g., 50GB)"
         return 1
