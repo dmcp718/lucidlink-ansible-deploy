@@ -32,12 +32,45 @@ This repository contains Ansible playbooks for automated deployment and configur
 
 ## Quick Start
 
-1. Clone this repository
-2. Copy and configure environment:
+The setup process involves two steps:
+
+1. Generate the environment configuration:
    ```bash
    ./setup.sh
    ```
-3. Edit `env.yml` with your configuration
+   This will:
+   - Create `env.yml` from the sample template
+   - Exit with a message to edit the configuration
+
+2. Edit `env.yml` with your configuration:
+   ```yaml
+   # LucidLink Configuration
+   ll_filespace: "your-filespace-name"  # Your LucidLink filespace name
+   ll_username: "your-username"         # Your LucidLink username
+   ll_mount_point: "/mnt/lucidlink"    # Mount point
+   ll_cache_location: "/var/cache/lucidlink"  # Cache location
+   ll_data_cache_size: "50GB"          # Cache size
+
+   # Server Configuration
+   servers:
+     - ip: "x.x.x.x"
+       hostname: "server1"
+   ```
+
+3. Run setup again to configure deployment:
+   ```bash
+   # Option A: Interactive (will prompt for LucidLink password)
+   ./setup.sh
+
+   # Option B: Non-interactive with password as argument
+   ./setup.sh "your-lucidlink-password"
+   ```
+   This will:
+   - Validate your configuration
+   - Create encrypted vault with your LucidLink password
+   - Generate inventory from server configuration
+   - Set up Ansible configuration
+
 4. Run the playbook:
    ```bash
    ansible-playbook site.yml
