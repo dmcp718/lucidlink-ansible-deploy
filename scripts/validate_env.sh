@@ -58,6 +58,14 @@ validate_servers() {
         return 1
     fi
 
+    # Check if this is the sample configuration
+    local sample_check
+    sample_check=$(grep -c "your-filespace-name" "$ENV_FILE" || true)
+    if [ "$sample_check" -gt 0 ]; then
+        echo "Note: Sample configuration detected, skipping IP validation"
+        return 0
+    fi
+
     local line_num=1
     local errors=0
     while IFS= read -r line || [ -n "$line" ]; do
