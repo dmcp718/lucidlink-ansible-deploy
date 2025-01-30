@@ -54,6 +54,16 @@
     msg: "Package list for {{ os_type }}: {{ os_packages[os_type] }}"
       
 - name: Install required packages
+  dnf:
+    name: "{{ os_packages[os_type] }}"
+    state: present
+  register: package_install
+  retries: 3
+  delay: 5
+  until: package_install is success
+  when: ansible_distribution == 'Amazon'
+  
+- name: Install required packages (Ubuntu)
   package:
     name: "{{ os_packages[os_type] }}"
     state: present
@@ -61,6 +71,7 @@
   retries: 3
   delay: 5
   until: package_install is success
+  when: ansible_distribution == 'Ubuntu'
   
 - name: Create required directories
   file:
