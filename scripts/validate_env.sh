@@ -15,6 +15,7 @@ check_field() {
     local field="$1"
     local value
     value=$(grep "^$field:" "$ENV_FILE" | sed "s/^$field:[[:space:]]*//")
+    value="${value//\"/}"  # Remove quotes
     if [ -z "$value" ] || [[ "$value" == "\"\""* ]]; then
         echo "Error: Missing or empty field: $field"
         return 1
@@ -40,6 +41,7 @@ validate_cache_size() {
     local value
     value=$(grep "^ll_data_cache_size:" "$ENV_FILE" | sed "s/^ll_data_cache_size:[[:space:]]*//")
     value="${value//\"/}"  # Remove quotes
+    value="${value//[[:space:]]/}"  # Remove whitespace
     if [[ ! "$value" =~ ^[0-9]+[MGT]B$ ]]; then
         echo "Error: ll_data_cache_size must be in format: <number>[M|G|T]B (e.g., 50GB)"
         return 1
@@ -60,9 +62,14 @@ validate_servers() {
     local errors=0
     while IFS= read -r line || [ -n "$line" ]; do
         if [[ "$line" =~ ^[[:space:]]*-[[:space:]]*ip:[[:space:]]*(.+)$ ]]; then
-            ip="${BASH_REMATCH[1]//\"/}"
+            ip="${BASH_REMATCH[1]//\"/}"  # Remove quotes
+            ip="${ip//[[:space:]]/}"      # Remove whitespace
+            # Skip placeholder IPs
+            if [[ "$ip" == "x.x.x.x" ]]; then
+                continue
+            fi
             # Basic IP format validation
-            if ! [[ "$ip" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            if ! [[ "$ip" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
                 echo "Error: Invalid IP format at line $line_num: $ip"
                 ((errors++))
             fi
