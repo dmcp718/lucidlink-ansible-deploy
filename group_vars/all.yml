@@ -1,0 +1,7 @@
+---
+# Load variables from env.yml
+ll_filespace: "{{ lookup('file', 'env.yml') | from_yaml | json_query('ll_filespace') }}"
+ll_username: "{{ lookup('file', 'env.yml') | from_yaml | json_query('ll_username') }}"
+ll_mount_point: "{{ lookup('file', 'env.yml') | from_yaml | json_query('ll_mount_point') }}"
+ll_cache_location: "{{ lookup('file', 'env.yml') | from_yaml | json_query('ll_cache_location') }}"
+ll_data_cache_size: "{{ lookup('file', 'env.yml') | from_yaml | json_query('ll_data_cache_size') }}"
