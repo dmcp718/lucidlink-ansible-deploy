@@ -21,6 +21,13 @@
 
 - name: Set OS-specific variables
   set_fact:
+    os_type: >-
+      {% if ansible_distribution == 'Ubuntu' %}ubuntu
+      {% elif ansible_distribution == 'Amazon' %}amazon_linux_2023
+      {% else %}unknown{% endif %}
+
+- name: Set package lists
+  set_fact:
     os_packages:
       ubuntu:
         - fuse
@@ -39,7 +46,7 @@
       
 - name: Install required packages
   package:
-    name: "{{ os_packages[ansible_local.env.os_type] }}"
+    name: "{{ os_packages[os_type] }}"
     state: present
   register: package_install
   retries: 3
