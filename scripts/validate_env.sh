@@ -59,9 +59,10 @@ validate_servers() {
     fi
 
     # Check if this is the sample configuration
-    local sample_check
-    sample_check=$(grep -c "your-filespace-name" "$ENV_FILE" || true)
-    if [ "$sample_check" -gt 0 ]; then
+    local filespace
+    filespace=$(grep "^ll_filespace:" "$ENV_FILE" | sed "s/^ll_filespace:[[:space:]]*//")
+    filespace="${filespace//\"/}"  # Remove quotes
+    if [[ "$filespace" == "your-filespace-name" ]]; then
         echo "Note: Sample configuration detected, skipping IP validation"
         return 0
     fi
