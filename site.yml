@@ -8,6 +8,7 @@
       local_action:
         module: command
         cmd: "./scripts/validate_env.sh env.yml"
+      become: false
       run_once: true
       tags: ['always']
   
