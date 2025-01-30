@@ -82,6 +82,20 @@ validate_servers() {
                 echo "Error: Invalid IP format at line $line_num: $ip"
                 ((errors++))
             fi
+            
+            # Check for OS type in the next line
+            read -r os_line
+            if [[ ! "$os_line" =~ ^[[:space:]]*os_type:[[:space:]]*(.+)$ ]]; then
+                echo "Error: Missing os_type for IP $ip"
+                ((errors++))
+            else
+                os_type="${BASH_REMATCH[1]}"
+                os_type=$(echo "$os_type" | sed 's/#.*$//' | sed 's/"//g' | sed "s/'//g" | tr -d '[:space:]')
+                if [[ "$os_type" != "ubuntu" && "$os_type" != "amazon_linux_2023" ]]; then
+                    echo "Error: Invalid os_type '$os_type' for IP $ip. Must be 'ubuntu' or 'amazon_linux_2023'"
+                    ((errors++))
+                fi
+            fi
         fi
         ((line_num++))
     done < "$ENV_FILE"

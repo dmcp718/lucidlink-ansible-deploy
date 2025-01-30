@@ -34,6 +34,50 @@ get_password() {
     fi
 }
 
+# Function to validate environment configuration
+validate_env() {
+    if [ ! -f "./scripts/validate_env.sh" ]; then
+        echo "Error: validate_env.sh script not found"
+        exit 1
+    fi
+    
+    ./scripts/validate_env.sh env.yml
+}
+
+# Function to generate inventory file
+generate_inventory() {
+    local env_file="env.yml"
+    local inventory_file="inventory"
+    
+    echo "[lucidlink]" > "$inventory_file"
+    
+    while IFS= read -r line; do
+        if [[ $line =~ ^[[:space:]]*-[[:space:]]*ip:[[:space:]]*(.+)$ ]]; then
+            ip="${BASH_REMATCH[1]}"
+            # Get the OS type from the next line
+            read -r os_line
+            if [[ $os_line =~ ^[[:space:]]*os_type:[[:space:]]*(.+)$ ]]; then
+                os_type="${BASH_REMATCH[1]}"
+                echo "$ip" >> "$inventory_file"
+                
+                # Create a local fact file for this host
+                cat > "/etc/ansible/facts.d/env.fact" << EOF
+[environment]
+os_type=$os_type
+EOF
+            fi
+        fi
+    done < "$env_file"
+}
+
+# Function to extract value from env.yml
+get_env_value() {
+    local key=$1
+    local default=$2
+    value=$(grep "^${key}:" env.yml | sed "s/^${key}:[[:space:]]*//")
+    echo "${value:-$default}"
+}
+
 # Check dependencies
 check_dependencies
 
@@ -46,7 +90,7 @@ if [ ! -f env.yml ]; then
 fi
 
 # Validate environment configuration
-if ! ./scripts/validate_env.sh env.yml; then
+if ! validate_env; then
     exit 1
 fi
 
@@ -71,36 +115,10 @@ EOL
 # Encrypt the vault
 ansible-vault encrypt --vault-password-file .vault_pass group_vars/lucidlink/vault.yml
 
-# Function to extract value from env.yml
-get_env_value() {
-    local key=$1
-    local default=$2
-    value=$(grep "^${key}:" env.yml | sed "s/^${key}:[[:space:]]*//")
-    echo "${value:-$default}"
-}
-
 # Generate inventory if it doesn't exist
 if [ ! -f inventory ]; then
     echo "Generating inventory file..."
-    echo "[lucidlink]" > inventory
-    
-    while IFS= read -r line; do
-        echo "Processing line: $line"  
-        if [[ $line =~ ^[[:space:]]*-[[:space:]]*ip:[[:space:]]*(.+)$ ]]; then
-            ip="${BASH_REMATCH[1]}"
-            echo "Found IP: $ip"  
-            # Remove quotes and comments
-            ip=$(echo "$ip" | sed 's/#.*$//' | sed 's/"//g' | sed "s/'//g" | tr -d '[:space:]')
-            echo "Cleaned IP: $ip"  
-            # Skip placeholder IPs
-            if [[ "$ip" == "x.x.x.x" ]]; then
-                echo "Skipping placeholder IP"  
-                continue
-            fi
-            echo "Adding IP to inventory: $ip"  
-            echo "$ip" >> inventory
-        fi
-    done < env.yml
+    generate_inventory
 fi
 
 # Create ansible.cfg if it doesn't exist
