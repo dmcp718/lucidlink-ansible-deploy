@@ -87,6 +87,12 @@ if [ ! -f inventory ]; then
     while IFS= read -r line; do
         if [[ $line =~ ^[[:space:]]*-[[:space:]]*ip:[[:space:]]*(.+)$ ]]; then
             ip="${BASH_REMATCH[1]}"
+            # Remove quotes and comments
+            ip=$(echo "$ip" | sed 's/#.*$//' | sed 's/"//g' | sed "s/'//g" | tr -d '[:space:]')
+            # Skip placeholder IPs
+            if [[ "$ip" == "x.x.x.x" ]]; then
+                continue
+            fi
             echo "$ip" >> inventory
         fi
     done < env.yml
