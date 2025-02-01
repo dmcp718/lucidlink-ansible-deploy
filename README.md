@@ -100,4 +100,4 @@ If you prefer to set up manually instead of using setup.sh:
 
 ## License
 
-See LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
