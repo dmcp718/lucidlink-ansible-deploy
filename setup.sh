@@ -1,5 +1,52 @@
 #!/bin/bash
 
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# Print usage
+usage() {
+    echo -e "${YELLOW}Usage:${NC}"
+    echo -e "  $0 [password]"
+    echo
+    echo -e "${YELLOW}Options:${NC}"
+    echo -e "  password    LucidLink password (optional)"
+    echo
+    echo -e "${YELLOW}Examples:${NC}"
+    echo -e "  $0                     # Interactive mode"
+    echo -e "  $0 \"your-password\"     # Non-interactive mode"
+    echo
+    echo -e "${YELLOW}Description:${NC}"
+    echo -e "  Sets up LucidLink Ansible deployment by:"
+    echo -e "  - Creating env.yml from template"
+    echo -e "  - Creating encrypted vault for password"
+    echo -e "  - Configuring Ansible settings"
+}
+
+# Show error and exit
+error() {
+    echo -e "${RED}Error: $1${NC}" >&2
+    exit 1
+}
+
+# Show success message
+success() {
+    echo -e "${GREEN}$1${NC}"
+}
+
+# Show info message
+info() {
+    echo -e "${YELLOW}$1${NC}"
+}
+
+# Check if help is requested
+if [[ "$1" == "-h" ]] || [[ "$1" == "--help" ]]; then
+    usage
+    exit 0
+fi
+
 # Exit on error
 set -e
 
@@ -192,4 +239,7 @@ EOL
 # Set up logging directory
 mkdir -p logs
 
-echo "Setup complete! You can now run: ansible-playbook site.yml"
+success "Setup complete!"
+info "Next steps:"
+info "1. Edit env.yml with your configuration"
+info "2. Run: ansible-playbook site.yml"
