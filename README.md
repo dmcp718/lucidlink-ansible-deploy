@@ -47,4 +47,57 @@ Ansible playbook for automated deployment and configuration of LucidLink client 
    ```
 
 3. Run the playbook:
+   ```bash
+   ansible-playbook site.yml
    ```
+
+## Features
+
+- Automated LucidLink client installation
+- Secure credential handling with systemd-creds
+- Proper service management with systemd
+- Configuration management
+- Error handling and logging
+
+## Roles
+
+### lucidlink-install
+- Installs LucidLink client
+- Creates service user and directories
+- Sets up systemd service
+- Configures FUSE
+
+### lucidlink-config  
+- Starts LucidLink daemon
+- Configures cache size and location
+- Sets up logging
+- Handles error reporting
+
+## Security
+
+- Credentials encrypted with systemd-creds
+- Proper file permissions
+- Dedicated service user
+- No sensitive data in logs
+
+## Manual Setup (Alternative)
+
+If you prefer to set up manually instead of using setup.sh:
+
+1. Copy and configure environment:
+   ```bash
+   cp env.sample.yml env.yml
+   ```
+
+2. Create vault for password:
+   ```bash
+   ansible-vault create vault.yml
+   ```
+   Add your password:
+   ```yaml
+   ll_password: "your-password"
+   ```
+
+## License
+
+See LICENSE file for details.
