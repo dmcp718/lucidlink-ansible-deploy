@@ -1,19 +1,5 @@
-.vault_pass
-*.retry
 env.yml
-.env
-*.pem
-*.key
-.DS_Store
-__pycache__/
-*.pyc
-
-# Keep vault.sample.yml but ignore actual vault files
-group_vars/*/vault.yml
-!group_vars/*/vault.sample.yml
-
-ansible.cfg
-inventory
+*.retry
 *.log
-logs/
-group_vars/lucidlink/vault.yml
+.DS_Store
+vault.yml
