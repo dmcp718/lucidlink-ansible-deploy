@@ -11,3 +11,9 @@ __pycache__/
 # Keep vault.sample.yml but ignore actual vault files
 group_vars/*/vault.yml
 !group_vars/*/vault.sample.yml
+
+ansible.cfg
+inventory
+*.log
+logs/
+group_vars/lucidlink/vault.yml

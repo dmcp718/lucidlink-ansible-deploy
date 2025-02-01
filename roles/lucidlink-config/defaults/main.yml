@@ -1,0 +1,12 @@
+---
+# Default LucidLink version
+ll_version: "2"
+
+# Default paths and settings
+ll_mount_point: "/mnt/lucid"
+ll_cache_location: "/data/lucidlink"
+ll_data_cache_size: "25GB"
+
+# These should be overridden in env.yml
+ll_username: ""
+ll_filespace: "" 

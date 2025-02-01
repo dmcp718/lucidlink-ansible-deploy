@@ -1,0 +1,8 @@
+---
+# Default LucidLink version
+ll_version: "2"
+
+# Default paths
+ll_mount_point: "/mnt/lucid"
+ll_cache_location: "/data/lucidlink"
+ll_data_cache_size: "25GB" 

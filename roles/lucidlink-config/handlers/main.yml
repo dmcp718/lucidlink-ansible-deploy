@@ -1,0 +1,5 @@
+---
+- name: restart_lucidlink
+  systemd:
+    name: lucidlink
+    state: restarted 

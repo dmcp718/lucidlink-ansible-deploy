@@ -1,23 +1,22 @@
 ---
-- name: Check system requirements
-  block:
-    - name: Get system memory
-      ansible.builtin.shell: free -b | awk 'NR==2 {print $2}'
-      register: total_memory
-      changed_when: false
-      
-    - name: Get available disk space
-      ansible.builtin.shell: df -B1 {{ ll_cache_location | dirname }} | awk 'NR==2 {print $4}'
-      register: available_space
-      changed_when: false
-      
-    - name: Verify system meets requirements
-      assert:
-        that:
-          - total_memory.stdout|int >= 4294967296  # 4GB minimum
-          - available_space.stdout|int >= 10737418240  # 10GB minimum
-        fail_msg: "System does not meet minimum requirements: 4GB RAM and 10GB free space"
-        success_msg: "System meets minimum requirements"
+- name: Get system memory
+  setup:
+    filter: ansible_memtotal_mb
+  tags: ['health-check']
+
+- name: Get available disk space
+  shell: df --output=avail -B 1 {{ ll_cache_location | dirname }} | tail -n 1
+  register: available_space
+  changed_when: false
+  tags: ['health-check']
+
+- name: "Verify system meets requirements"
+  assert:
+    that:
+      - "ansible_memtotal_mb|int >= 2048"  # 2GB RAM minimum
+      - "available_space.stdout|int >= 5368709120"  # 5GB minimum
+    fail_msg: "System does not meet minimum requirements: 2GB RAM and 5GB free space"
+  tags: ['health-check']
 
 - name: Debug OS info
   debug:

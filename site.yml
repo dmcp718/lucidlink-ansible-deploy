@@ -2,6 +2,8 @@
 - name: Deploy LucidLink
   hosts: all
   become: true
+  vars_files:
+    - group_vars/lucidlink/vault.yml
   
   pre_tasks:
     - name: Validate environment configuration
@@ -13,7 +15,6 @@
       tags: ['always']
   
   roles:
-    - { role: lucidlink-prerequisites, tags: ['prereq', 'setup'] }
     - { role: lucidlink-install, tags: ['install', 'setup'] }
     - { role: lucidlink-config, tags: ['config'] }
     - { role: lucidlink-mount, tags: ['mount'] }

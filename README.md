@@ -1,166 +1,74 @@
 # LucidLink Ansible Deployment
 
-This repository contains Ansible playbooks for automated deployment and configuration of LucidLink clients. The deployment process is modular, secure, and includes comprehensive error handling and validation.
+Ansible playbook for automated deployment and configuration of LucidLink client on Linux systems.
 
 ## Prerequisites
 
 - Ansible 2.9 or higher
-- Python 3.6 or higher
-- OpenSSL
-- Target systems must have:
-  - Minimum 4GB RAM
-  - Minimum 10GB free disk space
+- Target systems:
+  - Ubuntu or Amazon Linux
+  - Systemd
   - FUSE support
   - Internet connectivity
 
-## Directory Structure
-
-```
-.
-├── roles/
-│   ├── lucidlink-prerequisites/   # System preparation
-│   ├── lucidlink-install/         # Core installation
-│   ├── lucidlink-config/          # Configuration management
-│   └── lucidlink-mount/           # Mount point management
-├── scripts/
-│   └── validate_env.py           # Environment validation script
-├── env.sample.yml                # Sample configuration
-├── site.yml                      # Main playbook
-├── setup.sh                      # Setup script
-└── ansible.cfg                   # Ansible configuration
-```
-
 ## Quick Start
 
-The setup process involves two steps:
-
-1. Generate the environment configuration:
+1. Copy and configure environment:
    ```bash
-   ./setup.sh
+   cp env.sample.yml env.yml
    ```
-   This will:
-   - Create `env.yml` from the sample template
-   - Exit with a message to edit the configuration
 
-2. Edit `env.yml` with your configuration:
+2. Edit `env.yml`:
    ```yaml
    # LucidLink Configuration
-   ll_filespace: "your-filespace-name"  # Your LucidLink filespace name
-   ll_username: "your-username"         # Your LucidLink username
-   ll_mount_point: "/mnt/lucidlink"    # Mount point
-   ll_cache_location: "/var/cache/lucidlink"  # Cache location
-   ll_data_cache_size: "50GB"          # Cache size
+   ll_filespace: "your-filespace.dpfs"
+   ll_username: "your-username"
+   ll_mount_point: "/mnt/lucid"
+   ll_cache_location: "/data/lucidlink"
+   ll_data_cache_size: "25GB"
+   ll_version: "2"  # Can be "2" or "3"
+   ll_password: "your-password"  # Or use ansible-vault
 
    # Server Configuration
    servers:
      - ip: "x.x.x.x"
-       hostname: "server1"
+       os_type: "ubuntu"  # or "amazon"
    ```
 
-3. Run setup again to configure deployment:
-   ```bash
-   # Option A: Interactive (will prompt for LucidLink password)
-   ./setup.sh
-
-   # Option B: Non-interactive with password as argument
-   ./setup.sh "your-lucidlink-password"
-   ```
-   This will:
-   - Validate your configuration
-   - Create encrypted vault with your LucidLink password
-   - Generate inventory from server configuration
-   - Set up Ansible configuration
-
-4. Run the playbook:
+3. Run the playbook:
    ```bash
    ansible-playbook site.yml
    ```
 
-## Configuration
+## Features
 
-### Environment Configuration (env.yml)
+- Automated LucidLink client installation
+- Secure credential handling with systemd-creds
+- Proper service management with systemd
+- Configuration management
+- Error handling and logging
 
-```yaml
-# LucidLink Configuration
-ll_filespace: "your-filespace-name"  # Your LucidLink filespace name
-ll_username: "your-username"         # Your LucidLink username
-ll_mount_point: "/mnt/lucidlink"    # Where to mount the LucidLink filesystem
-ll_cache_location: "/var/cache/lucidlink"  # Where to store LucidLink cache
-ll_data_cache_size: "50GB"          # Size of the data cache
+## Roles
 
-# Server Configuration
-servers:
-  - ip: "x.x.x.x"
-    hostname: "server1"
-```
+### lucidlink-install
+- Installs LucidLink client
+- Creates service user and directories
+- Sets up systemd service
+- Configures FUSE
 
-### Security
+### lucidlink-config  
+- Starts LucidLink daemon
+- Configures cache size and location
+- Sets up logging
+- Handles error reporting
 
-- Credentials are stored in an encrypted Ansible vault
-- Secure random vault password generation
-- File permissions are properly set
-- No sensitive information in logs
+## Security
 
-## Deployment Tags
-
-Use tags to run specific parts of the deployment:
-
-- `prereq`: System prerequisites
-- `install`: LucidLink installation
-- `config`: Configuration
-- `mount`: Filesystem mounting
-- `health-check`: Run health checks
-
-Example:
-```bash
-ansible-playbook site.yml --tags "install,config"
-```
-
-## Monitoring
-
-The deployment includes comprehensive monitoring:
-
-- System metrics collection
-- Performance monitoring
-- Health checks
-- Automated alerts
-- Logging configuration
-
-Logs are stored in `/var/log/lucidlink-ansible-deploy/`
-
-## Error Handling
-
-The deployment includes:
-
-- Pre-flight system checks
-- Comprehensive error handling
-- Automatic retry mechanisms
-- Rollback capabilities
-- Detailed logging
-
-## Troubleshooting
-
-1. Check logs:
-   ```bash
-   tail -f /var/log/lucidlink-ansible-deploy/deploy.log
-   ```
-
-2. Verify service status:
-   ```bash
-   systemctl status lucidlink
-   ```
-
-3. Check mount point:
-   ```bash
-   mountpoint /mnt/lucidlink
-   ```
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Submit a pull request
+- Credentials encrypted with systemd-creds
+- Proper file permissions
+- Dedicated service user
+- No sensitive data in logs
 
 ## License
 
-See the LICENSE file for details.
+See LICENSE file for details.

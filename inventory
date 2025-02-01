@@ -1,7 +1,2 @@
 [lucidlink]
-{{ groups['lucidlink'] }}
-# Replace the above IPs with your server IPs
-# server1 ansible_host=x.x.x.x
-# server2 ansible_host=x.x.x.x
-# server3 ansible_host=x.x.x.x
-# server4 ansible_host=x.x.x.x
+3.15.39.52

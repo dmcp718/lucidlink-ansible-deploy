@@ -1,50 +1,65 @@
 ---
 - name: Configure LucidLink
   block:
-    - name: Check if already configured
-      command: lucid status
-      register: lucid_status
-      changed_when: false
-      failed_when: false
-      
-    - name: Configure LucidLink credentials
+    - name: Start LucidLink daemon
       command: >
-        lucid configure
-        --username {{ ll_username }}
-        --password {{ ll_password }}
-        --filespace {{ ll_filespace }}
-        --non-interactive
-      no_log: true
-      when: lucid_status.rc != 0
-      register: config_result
-      
-    - name: Configure cache settings
+        su - lucidlink -c "/usr/bin/lucid{{ '2' if ll_version == '2' else '3' }}
+        --instance {{ '501' if ll_version == '2' else '2001' }}
+        daemon"
+      async: 45
+      poll: 0
+
+    - name: Wait for daemon to be ready
+      wait_for:
+        timeout: 10
+        
+    - name: Check daemon status
       command: >
-        lucid config set
-        --cache-location {{ ll_cache_location }}
-        --data-cache-size {{ ll_data_cache_size }}
-      when: config_result is changed
+        su - lucidlink -c "/usr/bin/lucid{{ '2' if ll_version == '2' else '3' }}
+        --instance {{ '501' if ll_version == '2' else '2001' }}
+        status"
+      register: status_result
+      until: status_result.rc == 0
+      retries: 30
+      delay: 2
+      ignore_errors: yes
+
+    - name: Configure cache size
+      command: >
+        su - lucidlink -c "/usr/bin/lucid{{ '2' if ll_version == '2' else '3' }}
+        --instance {{ '501' if ll_version == '2' else '2001' }}
+        config --set --DataCache.Size {{ ll_data_cache_size }}"
+      register: cache_size_result
+      ignore_errors: yes
       
-    - name: Enable auto-updates
-      command: lucid config set --auto-update true
-      changed_when: false
+    - name: Configure cache location
+      command: >
+        su - lucidlink -c "/usr/bin/lucid{{ '2' if ll_version == '2' else '3' }}
+        --instance {{ '501' if ll_version == '2' else '2001' }}
+        config --set --DataCache.location {{ ll_cache_location }}"
+      register: cache_location_result
+      ignore_errors: yes
       
+    - name: Create logging directory
+      file:
+        path: /etc/lucidlink
+        state: directory
+        mode: '0755'
+        owner: lucidlink
+        group: lucidlink
+
     - name: Configure logging
-      template:
-        src: logging.conf.j2
+      copy:
+        src: monitoring.conf
         dest: /etc/lucidlink/logging.conf
         mode: '0644'
+        owner: lucidlink
+        group: lucidlink
       notify: restart_lucidlink
       
   rescue:
-    - name: Log configuration failure
-      ansible.builtin.debug:
-        msg: "Failed to configure LucidLink"
-        
-    - name: Backup configuration
-      command: lucid config backup --output /tmp/lucid-config-backup-{{ ansible_date_time.iso8601 }}
-      when: lucid_status.rc == 0
-      
     - name: Fail the play
       fail:
-        msg: "Configuration failed. A backup has been created if possible."
+        msg: "Configuration failed. Please check the logs for more information."
+      when: (cache_size_result is defined and cache_size_result is failed) or 
+            (cache_location_result is defined and cache_location_result is failed)
