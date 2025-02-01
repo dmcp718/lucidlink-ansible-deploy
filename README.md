@@ -13,23 +13,16 @@ Ansible playbook for automated deployment and configuration of LucidLink client 
 
 ## Quick Start
 
-1. Run the setup script:
+1. Run setup script to create configuration template:
    ```bash
    # Show setup options and help
    ./setup.sh --help
 
-   # Interactive mode (will prompt for password)
+   # First run creates env.yml template
    ./setup.sh
-
-   # Or non-interactive with password
-   ./setup.sh "your-lucidlink-password"
    ```
-   This will:
-   - Create env.yml from template
-   - Create encrypted vault for password
-   - Configure Ansible settings
 
-2. Edit `env.yml`:
+2. Edit `env.yml` with your configuration:
    ```yaml
    # LucidLink Configuration
    ll_filespace: "your-filespace.dpfs"
@@ -46,7 +39,19 @@ Ansible playbook for automated deployment and configuration of LucidLink client 
                          # or "rhel" for Red Hat-based distros (RHEL, Amazon Linux, CentOS)
    ```
 
-3. Run the playbook:
+3. Run setup script again to configure deployment:
+   ```bash
+   # Interactive mode (will prompt for password)
+   ./setup.sh
+
+   # Or non-interactive with password
+   ./setup.sh "your-lucidlink-password"
+   ```
+   This will:
+   - Create encrypted vault for password
+   - Configure Ansible settings
+
+4. Run the playbook:
    ```bash
    ansible-playbook site.yml
    ```
