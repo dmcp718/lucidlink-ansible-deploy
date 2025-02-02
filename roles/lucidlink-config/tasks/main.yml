@@ -1,32 +1,9 @@
 ---
-- name: Configure LucidLink
+- name: Configure LucidLink (Ubuntu)
   block:
-    - name: Start LucidLink daemon
-      command: >
-        su - lucidlink -c "/usr/bin/lucid{{ '2' if ll_version == '2' else '3' }}
-        --instance {{ '501' if ll_version == '2' else '2001' }}
-        daemon"
-      async: 45
-      poll: 0
-
-    - name: Wait for daemon to be ready
-      wait_for:
-        timeout: 10
-        
-    - name: Check daemon status
-      command: >
-        su - lucidlink -c "/usr/bin/lucid{{ '2' if ll_version == '2' else '3' }}
-        --instance {{ '501' if ll_version == '2' else '2001' }}
-        status"
-      register: status_result
-      until: status_result.rc == 0
-      retries: 30
-      delay: 2
-      ignore_errors: yes
-
     - name: Configure cache size
       command: >
-        su - lucidlink -c "/usr/bin/lucid{{ '2' if ll_version == '2' else '3' }}
+        su - lucidlink -c "/usr/bin/lucid2
         --instance {{ '501' if ll_version == '2' else '2001' }}
         config --set --DataCache.Size {{ ll_data_cache_size }}"
       register: cache_size_result
@@ -34,12 +11,32 @@
       
     - name: Configure cache location
       command: >
-        su - lucidlink -c "/usr/bin/lucid{{ '2' if ll_version == '2' else '3' }}
+        su - lucidlink -c "/usr/bin/lucid2
         --instance {{ '501' if ll_version == '2' else '2001' }}
         config --set --DataCache.location {{ ll_cache_location }}"
       register: cache_location_result
       ignore_errors: yes
+  when: ansible_distribution == "Ubuntu"
+
+- name: Configure LucidLink (RHEL)
+  block:
+    - name: Configure cache size
+      command: >
+        su - lucidlink -c "/bin/lucid2 --instance 501
+        config --set --DataCache.Size {{ ll_data_cache_size }}"
+      register: cache_size_result
+      ignore_errors: yes
       
+    - name: Configure cache location
+      command: >
+        su - lucidlink -c "/bin/lucid2 --instance 501
+        config --set --DataCache.location {{ ll_cache_location }}"
+      register: cache_location_result
+      ignore_errors: yes
+  when: ansible_distribution != "Ubuntu"
+
+- name: Configure cache and logging
+  block:
     - name: Create logging directory
       file:
         path: /etc/lucidlink
@@ -56,7 +53,7 @@
         owner: lucidlink
         group: lucidlink
       notify: restart_lucidlink
-      
+
   rescue:
     - name: Fail the play
       fail:

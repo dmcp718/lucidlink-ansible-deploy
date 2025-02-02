@@ -1,3 +1,10 @@
+{% if ansible_distribution == "Ubuntu" %}
 FILESPACE={{ ll_filespace }}
 FSUSER={{ ll_username }}
-MOUNTPOINT={{ ll_mount_point }} 
+MOUNTPOINT={{ ll_mount_point }}
+{% else %}
+FILESPACE={{ ll_filespace }}
+FSUSER={{ ll_username }}
+MOUNTPOINT={{ ll_mount_point }}
+PASSWORD={{ ll_password }}
+{% endif %} 

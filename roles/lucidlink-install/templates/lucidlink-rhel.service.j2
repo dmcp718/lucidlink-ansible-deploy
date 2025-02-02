@@ -1,0 +1,17 @@
+[Unit]
+Description=LucidLink Daemon
+After=network-online.target
+
+[Service]
+Type=simple
+User=lucidlink
+Group=lucidlink
+WorkingDirectory=/client/lucid
+EnvironmentFile=/client/lucid/lucidlink-service-vars.txt
+LoadCredentialEncrypted=ll-password-1:/client/lucid/ll-password-1.cred
+ExecStart=/bin/bash -c "systemd-creds cat ll-password-1 | tr -d '\n' | /bin/lucid2 --instance 501 daemon --fs {{ ll_filespace }} --user {{ ll_username }} --mount-point {{ ll_mount_point }} --fuse-allow-other"
+ExecStop=/bin/lucid2 --instance 501 exit
+Restart=on-abort
+
+[Install]
+WantedBy=multi-user.target 

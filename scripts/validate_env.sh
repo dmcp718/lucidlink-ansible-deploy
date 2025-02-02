@@ -91,8 +91,8 @@ validate_servers() {
             else
                 os_type="${BASH_REMATCH[1]}"
                 os_type=$(echo "$os_type" | sed 's/#.*$//' | sed 's/"//g' | sed "s/'//g" | tr -d '[:space:]')
-                if [[ "$os_type" != "ubuntu" && "$os_type" != "amazon_linux_2023" ]]; then
-                    echo "Error: Invalid os_type '$os_type' for IP $ip. Must be 'ubuntu' or 'amazon_linux_2023'"
+                if [[ "$os_type" != "ubuntu" && "$os_type" != "rhel" ]]; then
+                    echo "Error: Invalid os_type '$os_type' for IP $ip. Must be 'ubuntu' or 'rhel'"
                     ((errors++))
                 fi
             fi

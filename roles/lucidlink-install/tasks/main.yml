@@ -1,36 +1,38 @@
 ---
 - name: Check if LucidLink is already installed
   stat:
-    path: "{{ '/usr/bin/lucid2' if ll_version == '2' else '/usr/bin/lucid' }}"
+    path: "{{ '/bin/lucid2' if ansible_distribution != 'Ubuntu' else '/usr/bin/lucid2' }}"
   register: lucid_binary
   
 - name: Set download URL based on version and OS
   set_fact:
     download_url: >-
-      {% if ll_version == "2" %}
-        {% if ansible_distribution == "Ubuntu" %}
+      {%- if ll_version == "2" -%}
+        {%- if ansible_distribution == "Ubuntu" -%}
         https://www.lucidlink.com/download/latest/lin64/stable/
-        {% else %}
+        {%- else -%}
         https://www.lucidlink.com/download/latest/lin64-rpm/stable/
-        {% endif %}
-      {% else %}
-        {% if ansible_distribution == "Ubuntu" %}
+        {%- endif -%}
+      {%- else -%}
+        {%- if ansible_distribution == "Ubuntu" -%}
         https://www.lucidlink.com/download/new-ll-latest/linux-deb/stable/
-        {% else %}
+        {%- else -%}
         https://www.lucidlink.com/download/new-ll-latest/linux-rpm/stable/
-        {% endif %}
-      {% endif %}
+        {%- endif -%}
+      {%- endif -%}
     package_ext: "{{ 'deb' if ansible_distribution == 'Ubuntu' else 'rpm' }}"
 
 - name: Download LucidLink installer
-  get_url:
-    url: "{{ download_url }}"
-    dest: "/tmp/lucidinstaller.{{ package_ext }}"
-    mode: '0644'
-    headers:
-      Referer: ";auto"
+  command: >
+    curl -L --referer ";auto"
+    "{{ download_url }}"
+    -o "/tmp/lucidinstaller.{{ package_ext }}"
+  args:
+    creates: "/tmp/lucidinstaller.{{ package_ext }}"
   when: not lucid_binary.stat.exists
   register: download_result
+  changed_when: download_result.rc == 0
+  failed_when: download_result.rc != 0
 
 - name: Install LucidLink (DEB)
   apt:
@@ -45,6 +47,7 @@
   yum:
     name: "/tmp/lucidinstaller.rpm"
     state: present
+    disable_gpg_check: yes
   when: 
     - not lucid_binary.stat.exists
     - ansible_distribution != "Ubuntu"
@@ -81,11 +84,12 @@
     state: directory
     owner: lucidlink
     group: lucidlink
-    mode: '0700'
+    mode: '0755'
   loop:
     - /client/lucid
     - "{{ ll_mount_point }}"
     - "{{ ll_cache_location }}"
+    - /data
 
 - name: Create environment file
   template:
@@ -93,14 +97,99 @@
     dest: /client/lucid/lucidlink-service-vars.txt
     owner: lucidlink
     group: lucidlink
-    mode: '0600'
+    mode: '0644'
 
-- name: Create temporary password file
-  copy:
-    content: "{{ ll_password | trim | b64encode }}"
-    dest: /tmp/lucidlink-password1.txt
-    mode: '0600'
-  no_log: true
+- name: Fix environment file line endings
+  replace:
+    path: /client/lucid/lucidlink-service-vars.txt
+    regexp: '\s*$'
+    replace: ''
+
+- name: Configure fuse
+  lineinfile:
+    path: /etc/fuse.conf
+    regexp: '^#user_allow_other'
+    line: 'user_allow_other'
+
+- name: Create systemd service file
+  template:
+    src: "lucidlink-{{ 'rhel' if ansible_distribution != 'Ubuntu' else 'ubuntu' }}.service.j2"
+    dest: /etc/systemd/system/lucidlink.service
+    owner: root
+    group: root
+    mode: '0644'
+  notify: reload_systemd
+
+- name: Create filesystem on data volume
+  filesystem:
+    fstype: xfs
+    dev: /dev/nvme1n1
+
+- name: Create mount point directory
+  file:
+    path: /data
+    state: directory
+    mode: '0755'
+    owner: lucidlink
+    group: lucidlink
+
+- name: Add mount to fstab
+  mount:
+    path: /data
+    src: /dev/nvme1n1
+    fstype: xfs
+    state: mounted
+    opts: defaults
+    dump: 0
+    passno: 0
+
+- name: Set data directory permissions for lucidlink user
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: lucidlink
+    group: lucidlink
+    mode: '0755'
+    recurse: yes
+  loop:
+    - /data
+    - /data/instance_501
+    - /data/lucidlink
+
+- name: Enable and start LucidLink service
+  systemd:
+    name: lucidlink
+    state: started
+    enabled: yes
+    daemon_reload: yes
+  when: ll_version == "2"
+
+- name: Set lucidlink directory permissions
+  file:
+    path: /client/lucid
+    state: directory
+    owner: lucidlink
+    group: lucidlink
+    mode: '0755'
+    recurse: no  # Don't recurse since we want root-owned creds file
+
+- name: Check SELinux status
+  command: getenforce
+  register: selinux_status
+  changed_when: false
+
+- name: Set SELinux context for lucidlink directories
+  sefcontext:
+    target: '{{ item }}'
+    setype: systemd_unit_file_t
+    state: present
+  loop:
+    - '/client/lucid(/.*)?'
+  when: selinux_status.stdout != 'Disabled'
+
+- name: Apply new SELinux context
+  command: restorecon -Rv /client/lucid
+  when: selinux_status.stdout != 'Disabled'
 
 - name: Store and encrypt LucidLink password
   shell: |
@@ -114,23 +203,28 @@
     group: lucidlink
     mode: '0400'
 
-- name: Configure fuse
-  lineinfile:
-    path: /etc/fuse.conf
-    regexp: '^#user_allow_other'
-    line: 'user_allow_other'
+- name: Set SELinux context for data directories
+  sefcontext:
+    target: '{{ item }}'
+    setype: systemd_unit_file_t
+    state: present
+  loop:
+    - '/data(/.*)?'
+  when: selinux_status.stdout != 'Disabled'
 
-- name: Create systemd service file
-  template:
-    src: lucidlink.service.j2
-    dest: /etc/systemd/system/lucidlink.service
-    mode: '0644'
-  notify: reload_systemd
+- name: Apply new SELinux context for data
+  command: restorecon -Rv /data
+  when: selinux_status.stdout != 'Disabled'
 
-- name: Enable and start LucidLink service
-  systemd:
-    name: lucidlink
-    state: started
-    enabled: yes
-    daemon_reload: yes
-  when: ll_version == "2"
+- name: Remove old password file
+  file:
+    path: /client/lucid/lucidlink-password
+    state: absent
+
+- name: Ensure lucidlink user has write access to config directory
+  file:
+    path: /client/lucid
+    state: directory
+    owner: lucidlink
+    group: lucidlink
+    mode: '0755'
